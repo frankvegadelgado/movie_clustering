@@ -1,0 +1,73 @@
+# Graph construction parameters
+graph:
+  # Threshold for creating edges in the similarity graph (0.03-0.06 recommended)
+  similarity_threshold: 0.05
+  
+  # Minimum frequency for terms to be included in vocabulary
+  min_term_frequency: 2
+  
+  # Weight for title terms relative to genres (0.0-1.0)
+  title_term_weight: 0.3
+  
+  # Threshold for including genome tags based on relevance score
+  genome_relevance_threshold: 0.3
+  
+  # Maximum number of top tags to include from tags.csv
+  max_top_tags: 200
+  
+  # Minimum word length for title terms
+  min_title_word_length: 3
+
+# Clustering parameters
+clustering:
+  # Number of clusters for K-Means
+  n_clusters: 10
+  
+  # Maximum iterations for K-Means algorithm
+  max_iterations: 300
+  
+  # Random seed for reproducibility
+  random_state: 42
+  
+  # Number of K-Means initializations
+  n_init: 10
+  
+  # Number of top terms to show per cluster in analysis
+  top_n_terms_per_cluster: 5
+
+# Data paths
+data:
+  # Path to movies.csv file
+  movies_path: "data/raw/ml-25m/movies.csv"
+  
+  # Path to tags.csv file (optional)
+  tags_path: "data/raw/ml-25m/tags.csv"
+  
+  # Path to genome-scores.csv (optional)
+  genome_scores_path: "data/raw/ml-25m/genome-scores.csv"
+  
+  # Path to genome-tags.csv (optional)
+  genome_tags_path: "data/raw/ml-25m/genome-tags.csv"
+  
+  # Output path for clustering results
+  output_path: "data/processed/clusters.csv"
+  
+  # Output directory for visualizations
+  visualization_output_path: "data/processed/visualizations/"
+
+# Processing options
+processing:
+  # Whether to include tags from tags.csv
+  use_tags: true
+  
+  # Whether to include genome tags
+  use_genome_tags: true
+  
+  # Whether to extract terms from movie titles
+  use_title_terms: true
+  
+  # Whether to normalize vectors for spherical K-Means
+  normalize_vectors: true
+  
+  # Whether to save intermediate results for debugging
+  save_intermediate: false

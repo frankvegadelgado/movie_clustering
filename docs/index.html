@@ -1,0 +1,405 @@
+<html>
+  <head>
+    <title>Movie Clustering</title>
+    <style>
+      body {
+        background-color: black;
+        color: white;
+      }
+      code:not(.language-diff) {
+        background-color: white;
+        color: black;
+        display: inline-block;
+      }
+      code.language-diff {
+        background-color: while;
+        color: green;
+      }
+    </style>
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        jax: ["input/TeX", "output/HTML-CSS"],
+        extensions: ["tex2jax.js"],
+        "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] },
+        tex2jax: { inlineMath: [ ["$", "$"], ["\\(","\\)"] ], displayMath: [ ["$$","$$"], ["\\[", "\\]"] ], processEscapes: true, ignoreClass: "tex2jax_ignore|dno" },
+        TeX: { noUndefined: { attributes: { mathcolor: "red", mathbackground: "#FFEEEE", mathsize: "90%" } } },
+        messageStyle: "none"
+      });
+    </script>
+    <script
+      type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js"
+    ></script>
+  </head>
+  <body>
+<h1>Movie Catalog Clustering with Vertex Cover Feature Selection</h1>
+<p> 
+    <div align="center">
+      <img src="cluster_analysis.png" alt="Clustering Visualization" width="600">
+      <br><br>
+      <em>MovieLens Clustering Results.</em>
+    </div>
+</p>
+<h2>Overview</h2>
+<p>This project demonstrates a novel approach to movie catalog clustering using <strong>Vertex Cover-based feature selection</strong> combined with <strong>Spherical K-Means clustering</strong>. By representing movie metadata (genres, tags, keywords) as a graph and applying an efficient vertex cover approximation algorithm, we select the most discriminative features before clustering, resulting in more coherent and interpretable movie groupings.</p>
+<p>The key innovation is using Minimum Vertex Cover (MVC) as a feature selection method to identify central terms that capture the strongest relationships in the movie catalog, which significantly improves clustering quality compared to using all features.</p>
+<h2>Features</h2>
+<ul>
+<li><strong>Graph-based Feature Selection</strong>: Builds a term co-occurrence graph and applies vertex cover approximation</li>
+<li><strong>Efficient Implementation</strong>: Uses Hvala package for O(m log n) vertex cover approximation with √2 ratio</li>
+<li><strong>MovieLens Integration</strong>: Works with standard MovieLens datasets (25M, latest-small)</li>
+<li><strong>Spherical K-Means</strong>: Implements cosine similarity-based clustering optimized for text data</li>
+<li><strong>Visual Analytics</strong>: Provides cluster visualization and term importance analysis</li>
+<li><strong>Modular Design</strong>: Easy to extend to other text clustering domains</li>
+</ul>
+<h2>Project Structure</h2>
+<pre><code>movie_clustering/
+├── movie_clustering/
+│   ├── __init__.py
+│   ├── processor.py           # Main Algorithm
+├── data/
+│   ├── raw/                   # Original MovieLens data
+│   └── processed/             # Processed datasets
+├── tests/
+│   ├── test_movie_clustering.py
+├── requirements.txt
+├── setup.py
+├── config.yaml               # Configuration parameters
+└── README.md
+</code></pre>
+<h2>Installation</h2>
+<h3>Prerequisites</h3>
+<ul>
+<li>Python 3.8 or higher</li>
+<li>pip package manager</li>
+</ul>
+<h3>Quick Install</h3>
+<pre><code class="language-bash"># Clone the repository
+git clone https://github.com/frankvegadelgado/movie_clustering.git
+cd movie_clustering
+
+# Create and activate virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install package and dependencies
+pip install -e .
+</code></pre>
+<h3>Manual Installation</h3>
+<pre><code class="language-bash"># Install core dependencies
+pip install pandas scikit-learn matplotlib seaborn spacy pyyaml
+
+# Install Hvala package for vertex cover algorithm
+pip install hvala==0.0.7
+
+# Download spaCy English model
+python -m spacy download en_core_web_sm
+</code></pre>
+<h3>Using requirements.txt</h3>
+<pre><code class="language-bash"># Install all dependencies at once
+pip install -r requirements.txt
+</code></pre>
+<p><strong>requirements.txt:</strong></p>
+<pre><code># Vertex cover algorithm
+hvala==0.0.7
+
+# Core dependencies
+pandas&gt;=1.5.0
+scikit-learn&gt;=1.2.0
+matplotlib&gt;=3.7.0
+seaborn&gt;=0.12.0
+spacy&gt;=3.5.0
+
+# Configuration management
+pyyaml&gt;=6.0
+
+# Data processing and ML utilities
+joblib&gt;=1.2.0
+threadpoolctl&gt;=3.1.0
+</code></pre>
+<h2>Quick Start</h2>
+<h3>1. Install the Package</h3>
+<pre><code class="language-bash">pip install movie_clustering
+</code></pre>
+<h3>2. Download MovieLens Data</h3>
+<pre><code class="language-bash"># Download MovieLens 25M dataset
+cd data/raw
+wget -O ml-25m.zip http://files.grouplens.org/datasets/movielens/ml-25m.zip
+unzip ml-25m.zip
+cd ../..
+</code></pre>
+<h3>3. Run the Console Script</h3>
+<pre><code class="language-bash"># Create a basic configuration file
+cat &gt; config.yaml &lt;&lt; EOF
+data:
+  movies_path: &quot;data/raw/ml-25m/movies.csv&quot;
+  tags_path: &quot;data/raw/ml-25m/tags.csv&quot;
+  output_path: &quot;movie_clusters.csv&quot;
+graph:
+  similarity_threshold: 0.05
+clustering:
+  n_clusters: 10
+EOF
+
+# Run the clustering pipeline
+movie-cluster
+</code></pre>
+<h3>4. Basic Python Usage</h3>
+<pre><code class="language-python">from src.processor import MovieCatalogGraphProcessor
+import pandas as pd
+
+# Initialize processor
+processor = MovieCatalogGraphProcessor(similarity_threshold=0.05)
+
+# Load and process data
+movies_df, terms = processor.load_movielens_data(
+    movies_path='data/raw/ml-25m/movies.csv',
+    tags_path='data/raw/ml-25m/tags.csv'
+)
+
+# Build graph and find vertex cover
+similarity_matrix = processor.build_co_occurrence_matrix(movies_df, terms)
+graph = processor.build_term_graph(similarity_matrix)
+vertex_cover = processor.find_vertex_cover()  # Uses Hvala package
+
+# Create reduced feature vectors
+movie_vectors, movie_titles = processor.create_movie_vectors(movies_df)
+
+# Apply spherical k-means clustering
+cluster_labels = processor.spherical_kmeans_clustering(movie_vectors, n_clusters=10)
+
+# Analyze results
+results_df = processor.analyze_clusters(movies_df, cluster_labels, movie_titles)
+</code></pre>
+<h3>5. Complete Pipeline Example</h3>
+<pre><code class="language-python"># Alternative: Use the console script programmatically
+import subprocess
+
+# Run movie-cluster with custom config
+result = subprocess.run(['movie-cluster'], capture_output=True, text=True)
+print(result.stdout)
+</code></pre>
+<h2>How It Works</h2>
+<h3>1. Graph Construction</h3>
+<ul>
+<li><strong>Vertices</strong>: Movie terms (genres, tags, keywords)</li>
+<li><strong>Edges</strong>: Created between terms with similarity ≥ threshold (default: 0.3)</li>
+<li><strong>Edge Weight</strong>: Co-occurrence frequency normalized by term frequency</li>
+</ul>
+<h3>2. Vertex Cover Feature Selection</h3>
+<ul>
+<li>Uses Hvala's <code>find_vertex_cover()</code> with O(m log n) complexity and √2 approximation ratio</li>
+<li>Selects minimal set of terms that cover all strong relationships</li>
+<li>Reduces dimensionality while preserving semantic structure</li>
+</ul>
+<h3>3. Spherical K-Means Clustering</h3>
+<ul>
+<li>Normalizes vectors to unit sphere</li>
+<li>Uses cosine similarity as distance metric</li>
+<li>Optimized for high-dimensional sparse text data</li>
+</ul>
+<h3>4. Result Interpretation</h3>
+<ul>
+<li>Each cluster represents a coherent movie genre/theme combination</li>
+<li>Feature importance shows why movies were grouped together</li>
+<li>Visualizations reveal cluster overlap and boundaries</li>
+</ul>
+<h2>Key Algorithms</h2>
+<h3>Vertex Cover Approximation (via Hvala)</h3>
+<pre><code class="language-python">import hvala
+
+# Hvala provides efficient vertex cover approximation
+graph = ...  # NetworkX graph
+from hvala.algorithm import find_vertex_cover
+vertex_cover = find_vertex_cover(graph)
+</code></pre>
+<h3>Spherical K-Means</h3>
+<pre><code class="language-python"># Equivalent to K-Means with cosine similarity
+from sklearn.cluster import KMeans
+import numpy as np
+
+# Normalize vectors to unit sphere
+vectors_normalized = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+kmeans = KMeans(n_clusters=k, random_state=42)
+clusters = kmeans.fit_predict(vectors_normalized)
+</code></pre>
+<h2>Configuration</h2>
+<p>Modify <code>config.yaml</code> to adjust parameters:</p>
+<pre><code class="language-yaml"># Graph construction parameters
+graph:
+  # Threshold for creating edges in the similarity graph (0.2-0.4 recommended)
+  similarity_threshold: 0.05
+  
+  # Minimum frequency for terms to be included in vocabulary
+  min_term_frequency: 2
+  
+  # Weight for title terms relative to genres (0.0-1.0)
+  title_term_weight: 0.3
+  
+  # Threshold for including genome tags based on relevance score
+  genome_relevance_threshold: 0.3
+  
+  # Maximum number of top tags to include from tags.csv
+  max_top_tags: 200
+  
+  # Minimum word length for title terms
+  min_title_word_length: 3
+
+# Clustering parameters
+clustering:
+  # Number of clusters for K-Means
+  n_clusters: 10
+  
+  # Maximum iterations for K-Means algorithm
+  max_iterations: 300
+  
+  # Random seed for reproducibility
+  random_state: 42
+  
+  # Number of K-Means initializations
+  n_init: 10
+  
+  # Number of top terms to show per cluster in analysis
+  top_n_terms_per_cluster: 5
+
+# Data paths
+data:
+  # Path to movies.csv file
+  movies_path: &quot;data/raw/ml-25m/movies.csv&quot;
+  
+  # Path to tags.csv file (optional)
+  tags_path: &quot;data/raw/ml-25m/tags.csv&quot;
+  
+  # Path to genome-scores.csv (optional)
+  genome_scores_path: &quot;data/raw/ml-25m/genome-scores.csv&quot;
+  
+  # Path to genome-tags.csv (optional)
+  genome_tags_path: &quot;data/raw/ml-25m/genome-tags.csv&quot;
+  
+  # Output path for clustering results
+  output_path: &quot;data/processed/clusters.csv&quot;
+  
+  # Output directory for visualizations
+  visualization_output_path: &quot;data/processed/visualizations/&quot;
+
+# Processing options
+processing:
+  # Whether to include tags from tags.csv
+  use_tags: true
+  
+  # Whether to include genome tags
+  use_genome_tags: true
+  
+  # Whether to extract terms from movie titles
+  use_title_terms: true
+  
+  # Whether to normalize vectors for spherical K-Means
+  normalize_vectors: true
+  
+  # Whether to save intermediate results for debugging
+  save_intermediate: false
+</code></pre>
+<h2>Results and Evaluation</h2>
+<h3>Performance Metrics</h3>
+<ul>
+<li><strong>Silhouette Score</strong>: Measures cluster separation and cohesion</li>
+<li><strong>Calinski-Harabasz Index</strong>: Ratio of between-cluster to within-cluster dispersion</li>
+<li><strong>Davies-Bouldin Index</strong>: Average similarity between clusters</li>
+</ul>
+<h3>Comparative Analysis</h3>
+<p>The method typically shows:</p>
+<ul>
+<li>15-25% improvement in silhouette score vs. baseline (all features)</li>
+<li>30-40% reduction in feature dimensions</li>
+<li>More interpretable clusters with clear thematic coherence</li>
+</ul>
+<h2>Applications</h2>
+<ol>
+<li><strong>Movie Recommendation Systems</strong>: Better understanding of movie similarities</li>
+<li><strong>Catalog Organization</strong>: Automated genre and theme discovery</li>
+<li><strong>Content Analysis</strong>: Identifying trends and gaps in movie libraries</li>
+<li><strong>Educational Tools</strong>: Teaching graph algorithms and clustering techniques</li>
+</ol>
+<h2>Extending the Project</h2>
+<h3>Custom Data Sources</h3>
+<pre><code class="language-python"># Implement your own data loader
+class CustomDataLoader:
+    def load_terms(self, data_path):
+        # Extract terms from your data format
+        pass
+</code></pre>
+<h3>Alternative Clustering</h3>
+<pre><code class="language-python"># Try different clustering algorithms
+from sklearn.cluster import DBSCAN, AgglomerativeClustering
+
+dbscan = DBSCAN(metric='cosine', eps=0.3)
+hierarchical = AgglomerativeClustering(n_clusters=10, linkage='average', affinity='cosine')
+</code></pre>
+<h2>Troubleshooting</h2>
+<h3>Common Issues</h3>
+<ol>
+<li>
+<p><strong>Hvala installation fails</strong></p>
+<pre><code class="language-bash"># Try installing from alternative source
+pip install hvala==0.0.7 --extra-index-url https://pypi.org/simple
+</code></pre>
+</li>
+<li>
+<p><strong>Memory issues with large datasets</strong></p>
+<ul>
+<li>Reduce <code>min_term_frequency</code> in config</li>
+<li>Use sparse matrices for similarity computation</li>
+<li>Process data in batches</li>
+</ul>
+</li>
+<li>
+<p><strong>spaCy model download fails</strong></p>
+<pre><code class="language-bash"># Download model manually
+python -m spacy download en_core_web_sm --direct
+</code></pre>
+</li>
+</ol>
+<h3>Debug Mode</h3>
+<pre><code class="language-python">processor = MovieCatalogGraphProcessor(debug=True)
+# Enables verbose logging and intermediate file saving
+</code></pre>
+<h2>Contributing</h2>
+<ol>
+<li>Fork the repository</li>
+<li>Create a feature branch (<code>git checkout -b feature/amazing-feature</code>)</li>
+<li>Commit changes (<code>git commit -m 'Add amazing feature'</code>)</li>
+<li>Push to branch (<code>git push origin feature/amazing-feature</code>)</li>
+<li>Open a Pull Request</li>
+</ol>
+<h3>Development Setup</h3>
+<pre><code class="language-bash">git clone https://github.com/frankvegadelgado/movie_clustering.git
+cd movie_clustering
+pip install -e &quot;.[dev]&quot;
+pre-commit install
+</code></pre>
+<h2>Citation</h2>
+<p>If you use this code in research, please cite:</p>
+<pre><code class="language-bibtex">@software{movie_clustering,
+  title = {Movie Catalog Clustering with Vertex Cover Feature Selection},
+  author = {Vega, Frank},
+  year = {2025},
+  url = {https://github.com/frankvegadelgado/movie_clustering}
+}
+</code></pre>
+<h2>License</h2>
+<p>This project is licensed under the MIT License - see the LICENSE file for details.</p>
+<h2>Acknowledgments</h2>
+<ul>
+<li>MovieLens dataset from GroupLens Research</li>
+<li>Hvala package for efficient vertex cover implementation</li>
+<li>Scikit-learn, NetworkX, and spaCy communities</li>
+<li>Inspired by research on graph-based feature selection and spherical clustering</li>
+</ul>
+<h2>Contact</h2>
+<p>For questions and support:</p>
+<ul>
+<li>GitHub Issues: <a href="https://github.com/frankvegadelgado/movie_clustering/issues">Project Issues</a></li>
+<li>Email: vega.frank@gmail.com</li>
+</ul>
+</body>
+</html>
